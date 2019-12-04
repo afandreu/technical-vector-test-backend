@@ -5,12 +5,16 @@ import org.springframework.stereotype.Service;
 
 import com.vector.tests.wallet.entities.Monedero;
 import com.vector.tests.wallet.entities.MonederoRepository;
+import com.vector.tests.wallet.service.PaymentServiceException;
 
 @Service
 public class MonederoService {
 	
 	@Autowired
     private MonederoRepository repository;
+	
+	@Autowired
+    private ExternalPaymentService externalPaymentService;
 	
 	public MonederoDto monederoId(String identificador) {
 		
@@ -25,37 +29,74 @@ public class MonederoService {
        return monederoDto;
     }
 
-	public MonederoDto cargo(MonederoDto monederoDto) {
+	public ResponseDto reembolso(MonederoDto monederoDto) {
 	   
        Monedero monedero = repository.findByIdentificador(monederoDto.getIdentificador());
+       ResponseDto response = new ResponseDto();
+       response.setMonedero(monederoDto);
        
        if(monedero != null) {
-          monedero.setSaldo(monedero.getSaldo() + monederoDto.getSaldo());
+          monedero.setSaldo(monedero.getSaldo().add(monederoDto.getSaldo()));
           monedero = repository.save(monedero);
-          monederoDto.setIdentificador(monedero.getIdentificador());
-          monederoDto.setSaldo(monedero.getSaldo());
+	      response.setStatus("OK");
+		  response.setMessage("accepted refund");
 	   } else {
-	          monederoDto.setIdentificador(null);
-	          monederoDto.setSaldo(null);
+		  response.setStatus("KO");
+		  response.setMessage("Could not refund");
        } 
 
-       return monederoDto;
+       return response;
 	}
 	
-	public MonederoDto reembolso(MonederoDto monederoDto) {
+	public ResponseDto cargo(MonederoDto monederoDto) {
 		   
        Monedero monedero = repository.findByIdentificador(monederoDto.getIdentificador());
+       ResponseDto response = new ResponseDto();
+       response.setMonedero(monederoDto);
        
-       if(monedero != null && monedero.getSaldo() - monederoDto.getSaldo() >= 0) {
-          monedero.setSaldo(monedero.getSaldo() - monederoDto.getSaldo());
+       if(monedero != null && monedero.getSaldo().subtract(monederoDto.getSaldo()).signum() > 0) {
+          monedero.setSaldo(monedero.getSaldo().subtract(monederoDto.getSaldo()));
           monedero = repository.save(monedero);
-          monederoDto.setIdentificador(monedero.getIdentificador());
-          monederoDto.setSaldo(monedero.getSaldo());
-	   } else {
-          monederoDto.setIdentificador(null);
-          monederoDto.setSaldo(null);
+		  response.setStatus("OK");
+		  response.setMessage("accepted charge");
+
+       } else {
+	      response.setStatus("KO");
+		  response.setMessage("Could not charge");
        } 
 
-       return monederoDto;
+       return response;
 	}
+	
+	public ResponseDto thirdParty(MonederoDto monederoDto) {
+		   
+	       Monedero monedero = repository.findByIdentificador(monederoDto.getIdentificador());
+	       ResponseDto response = new ResponseDto();
+	       response.setMonedero(monederoDto);
+	       
+	       try {
+				externalPaymentService.charge(monederoDto.getSaldo());
+		        if(monedero != null) {
+		           monedero.setSaldo(monedero.getSaldo().add(monederoDto.getSaldo()));
+		           monedero = repository.save(monedero);
+		           monederoDto.setIdentificador(monedero.getIdentificador());
+		           monederoDto.setSaldo(monedero.getSaldo());
+                   
+				   response.setStatus("OK");
+				   response.setMessage("accepted charge");
+
+		        } else {
+		 	    	response.setStatus("KO");
+					response.setMessage("Could not charge");
+		        } 
+				
+			} catch (PaymentServiceException e) {
+	 	    	response.setStatus("KO");
+				response.setMessage("Could not charge");
+			}
+	       
+
+	       return response;
+	}
+	
 }

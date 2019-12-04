@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.vector.tests.wallet.service.impl.ExternalPaymentService;
 import com.vector.tests.wallet.service.impl.MonederoDto;
 import com.vector.tests.wallet.service.impl.MonederoService;
+import com.vector.tests.wallet.service.impl.ResponseDto;
 
 @RestController
 @RequestMapping("/wallet")
@@ -42,36 +43,45 @@ public class WalletController {
 	}
 
 	@RequestMapping(value = "/cargo",method = RequestMethod.PUT)
-	public ResponseEntity<MonederoDto> cargo(@RequestBody final MonederoDto monederoDto) {
+	public ResponseEntity<ResponseDto> cargo(@RequestBody final MonederoDto monederoDto) {
 
-	    MonederoDto response = null;
+		ResponseDto response = null;
 
 		try {
 			response = monederoService.cargo(monederoDto);
-			if(response.getIdentificador() != null) {
-				return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
-			} else {
-				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-			}
+			return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+			
 		} catch (final Exception e) {
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}	
 
 	@RequestMapping(value = "/reembolso",method = RequestMethod.PUT)
-	public ResponseEntity<MonederoDto> reembolso(@RequestBody final MonederoDto monederoDto) {
+	public ResponseEntity<ResponseDto> reembolso(@RequestBody final MonederoDto monederoDto) {
 
-	    MonederoDto response = null;
+		ResponseDto response = null;
 
 		try {
 			response = monederoService.reembolso(monederoDto);
-			if(response.getIdentificador() != null) {
-				return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
-			} else {
-				return new ResponseEntity<>(HttpStatus.NOT_FOUND);
-			}
+			return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+			
+		} catch (final Exception e) {
+			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+	
+	@RequestMapping(value = "/third_party",method = RequestMethod.PUT)
+	public ResponseEntity<ResponseDto> thirdParty(@RequestBody final MonederoDto monederoDto) {
+
+	    ResponseDto response = null;
+
+		try {
+			response = monederoService.thirdParty(monederoDto);
+			return new ResponseEntity<>(response, HttpStatus.ACCEPTED);
+			
 		} catch (final Exception e) {
 			return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 	}	
+	
 }
